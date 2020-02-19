@@ -8,6 +8,11 @@ use Carbon\Carbon;
 use App\User;
 use App\Notifications\SignupActivate;
 use Illuminate\Support\Str;
+// use Laravolt\Avatar\Avatar;
+use Laravolt\Avatar\Facade as AvatarCustom;
+use Storage;
+use App\Role;
+use App\MongoUser;
 
 class OrgController extends Controller {
 
@@ -30,10 +35,18 @@ class OrgController extends Controller {
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'activation_token' => Str::random(60) 
+            'activation_token' => Str::random(60)
         ]);
         $user->save();
-        $user->notify(new SignupActivate($user)); // call activation notification 
+        /* Attach Roles admin */
+        $admin_role = Role::where('name', 'admin')->first();
+        $user->roles()->attach($admin_role);
+
+        // create avatar and update user
+        // $avatar = Avatar::create($user->name)->getImageObject()->encode('png');
+        //$avatar = AvatarCustom::create($user->name)->getImageObject()->encode('png');
+        //Storage::put('avatars/'.$user->id.'/avatar.png', (string) $avatar);
+        //$user->notify(new SignupActivate($user)); // call activation notification 
         return response()->json([
                     'message' => 'Successfully created user!'
                         ], 201);
@@ -115,6 +128,39 @@ class OrgController extends Controller {
         $user->activation_token = '';
         $user->save();
         return $user;
+    }
+
+    /*
+     * Check ACL Roles
+     * 
+     */
+
+    public function checkrole(Request $request) {
+        dd($request->all());
+    }
+
+    /**
+     * 
+     * 
+     */
+    public function usermailcheck($email, Request $request) {
+        $input = $request->all();
+        $user_detail = MongoUser::where('email', $email)->first();
+        dd($user_detail);
+      
+        if ($user_detail) {
+            $user_payment = commonhelper::CheckMemberPaymentStatus($user_detail->email);
+//        dd($user_payment);
+            if ($user_payment['status']) {
+                $user_detail['mem_date'] = $user_detail->membership_valid->toDatetime()->format('Y-m-d');
+                return $user_detail;
+            } else {
+                $user_detail['paymentdone'] = 0;
+                return $user_detail;
+            }
+        } else {
+            return 0;
+        }
     }
 
 }

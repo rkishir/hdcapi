@@ -26,5 +26,22 @@ Route::group([
     ], function() {
         Route::get('org/logout', 'OrgController@logout');
         Route::get('org/user', 'OrgController@user');
+        
+        
+        Route::get('org/checkrole', [
+           'uses'=> "OrgController@checkrole",
+            'as' => "org/checkrole",
+            'middleware' => "roles",
+            'roles'=> ['organization']
+        ]);
+        
+         Route::get('org/usermailcheck/{email}', [
+           'uses'=> "OrgController@usermailcheck",
+            'as' => "org/usermailcheck",
+            'middleware' => "roles",
+            'roles'=> ['organization']
+        ]);
+        
+        
     });
 });
